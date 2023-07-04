@@ -1,0 +1,15 @@
+cff-version: 1.1.0
+message: "If you use this software, please cite it as below."
+authors:
+  - family-names: Schwarz
+    given-names: Sebastian
+    orcid: https://orcid.org/0000-0001-8586-0437
+  - family-names: Pries
+    given-names: Sergej
+    orcid: https://orcid.org/0000-0000-0000-0000
+  - family-names: Schröder
+    given-names: Robin
+    orcid: https://orcid.org/0000-0000-0000-0000
+title: cell-by-cell-algorithm for CFD based compartment models
+version: v.1.0
+date-released: 2023-07-04
