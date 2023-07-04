@@ -14,6 +14,8 @@ The UDF and MATLAB files export/calculate more values than needed for the cluste
 	- "FUNC_VOLUME_FLOW" determines the exchange streams and the flow matrix for the generated compartment model
 	- "FUNC_MOMENTS_LINEAR_SYSTEM" applies the steady state mean age theory to the generated compartment model and performs a fluid dynamic characterization. A text file is generated with the results as an interpolation file for FLUENT with "exporttofluent" to visualize the results within FLUENT.
 6. The MATLAB script “SCRIPT_DOM” can be used to calculate the fluid dynamic characteristics of the CFD
+
 Contribution:
+
 The UDF for exporting the relevant data from FLUENT as well as the idea for the first MATLAB files for the clustering process and the calculation of the exchange streams were originally created by Sergej Pries during his master thesis “CFD-Simulation und numerische Analyse von Mehrphasenströmungen zur Optimierung der Auslegung von industriellen Mehrphasenreaktoren” in 2014. The files, in particular the MATLAB files for clustering the cells (“FUNC_CLUSTERING” & “FUNC_CLUSTERN_FIXED_DELTA_SLICES”) and determining the exchange streams (“FUNC_VOLUME_FLOW”), were heavily revised by Sebastian Schwarz to allow a faster and more efficient execution of the clustering process and the calculation of the model via the flow matrix.
 THE MATLAB function "exporttofluent" was created by Robin Schröder during his master thesis “Entwicklung eines CFD-basierten Compartmentmodells für Blasensäulenreaktoren” in 2021.
