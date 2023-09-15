@@ -1,5 +1,4 @@
 function [C,p_max]=FUNC_CLUSTERN_FIXED_DELTA_SLICES(c0_P, c0_c1_flow, delta)
-%% subfunction for clustering the CFD cells, which is called for every CPT within the function "FUNC_CLUSTERING"
 % Input:
 % - c0_P: matrix containing the cells and its parameter (c0,P)
 % - c0_c1_flow_small: matrix with all connectivites and flows (c0,c1,P)

@@ -1,19 +1,17 @@
 function [] = FUNC_CLUSTERING(n_SLICES,n_LOCAL)
-%% function for the overall clustering process, which is called within the script "SCRIPT_AUTOMATION_CLUSTERING_MOMENTS". The file "DATA_PREPARED" must be in the same directory
-
 % n_SLICES: number of slices for the domain
 % n_LOCAL: divisions of local Mean-Age within a slice
 
-x_max = 53.6e-3;    % x-position of the outlet in the CFD domain in m
-x_min = -2e-3;      % x-position of the inlet in the CFD domain in m
+x_max = 55.6e-3;    % x-position of the outlet in m
+x_min = -2e-3;      % x-position of the inlet in m
 delta_x = (x_max-x_min)/n_SLICES;   % width of slice in m
 
 % preparing the variable strings for loading, saving, the diary and the
 % interpolation file
-load_string = 'DATA_PREPARED.mat';
-save_string = strcat('CLUSTERED_DATA_SLICES_',num2str(n_SLICES),'_DELTA_',num2str(n_LOCAL),'.mat');
-diary_string = strcat('Diary_slices_',num2str(n_SLICES),'_delta_',num2str(n_LOCAL),'_clustering.txt');
-interpolation_string = strcat('INTERPOLATION_SLICES_',num2str(n_SLICES),'_DELTA_',num2str(n_LOCAL),'_CPT_NUMBER.txt');
+load_string = 'DATA_PREPARED_RE_1.mat';
+save_string = strcat('CLUSTERED_DATA_RE_1_SLICES_',num2str(n_SLICES),'_DELTA_',num2str(n_LOCAL),'.mat');
+diary_string = strcat('Diary_slices_RE_1_',num2str(n_SLICES),'_delta_',num2str(n_LOCAL),'_clustering.txt');
+interpolation_string = strcat('INTERPOLATION_RE_1_SLICES_',num2str(n_SLICES),'_DELTA_',num2str(n_LOCAL),'_CPT_NUMBER.txt');
 
 % load the relevant data for the clusteirng process
 load(load_string,'c0_M1','c0_c1_flow','c0_inlet_flow','c0_outlet_flow','c0_x_y_z_V');
@@ -69,7 +67,7 @@ Vol_Avg_M1 = zeros(n_CELLS,2);
 for j=1:n_SLICES
     % max and min x-position for the slice
     x1 = x_min + (j-1)*delta_x;
-    x2 = x1 + delta_x;
+    x2 = xmin + j*delta_x;
     % possible_cells contains only cells within the specified x-range
     possible_cells = c0_x_y_z_V(c0_x_y_z_V(:,2)>x1 & c0_x_y_z_V(:,2)<= x2,1);
     % c0_M1_small is in the first instance a locigal array, whicht contains
@@ -169,7 +167,7 @@ for j=1:n_SLICES
     Slice_M1_var_CoV(j,3) = var;
     Slice_M1_var_CoV(j,4) = CoV;
 end
-fprintf(fileID,'End of clustering.\n');
+fprintf(fileID,'Compartmentbildung beendet.\n');
 fclose(fileID);
 
 % determine the mean, variance and CoV of M1 within every slice for a
@@ -190,7 +188,7 @@ n_CPT = max(CPT);
 for i = 1:n_CPT
     Inputmatrix(CPT==i,end) = CPT(CPT==i);
 end
-% in the current FLUENT files, the UDS for the CPT number is the 'uds-6'.
+
 exporttofluent(Inputmatrix,{'uds-6'},interpolation_string);
 
 save(save_string,'c0_M1','c0_c1_flow','c0_inlet_flow','c0_outlet_flow',...

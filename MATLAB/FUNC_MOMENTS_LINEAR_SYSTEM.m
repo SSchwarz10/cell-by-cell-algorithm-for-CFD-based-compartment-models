@@ -1,23 +1,58 @@
-function [] = FUNC_MOMENTS_LINEAR_SYSTEM(n_SLICES,n_LOCAL)
-%% function for the overall clustering process, which is called within the script "SCRIPT_AUTOMATION_CLUSTERING_MOMENTS". The data for load are created by the function "FUNC_VOLUME_FLOW"
+function [] = FUNC_MOMENTS_LINEAR_SYSTEM(n_SLICES,n_LOCAL,Diff,Re)
 % n_SLICES: number of slices for the domain
 % n_LOCAL: divisions of local Mean-Age within a slice
+% Diff: Diffusion coefficient for the diffusive flux
+% Re: Reynoldsnumber for the operating point
+
+% Reynolds-number for the base case / CFD
+Re_base = 1;
 
 % preparing the variable strings for loading, saving, the diary and the
 % interpolation file
-load_string = strcat('CLUSTERED_DATA_VOLUME_FLOW_SLICES_',num2str(n_SLICES),'_DELTA_',num2str(n_LOCAL),'.mat');
-save_string = strcat('RESULT_SLICES_',num2str(n_SLICES),'_DELTA_',num2str(n_LOCAL),'_MOMENTS.mat');
-diary_string = strcat('Diary_slices_',num2str(n_SLICES),'_delta_',num2str(n_LOCAL),'_moments.txt');
-interpolation_string = strcat('INTERPOLATION_SLICES_',num2str(n_SLICES),'_DELTA_',num2str(n_LOCAL),'_MOMENTS.txt');
+load_string = strcat('CLUSTERED_DATA_RE_1_VOLUME_FLOW_SLICES_',num2str(n_SLICES),'_DELTA_',num2str(n_LOCAL),'.mat');
+save_string = strcat('RESULT_RE_BASE_1_D_',num2str(Diff),'_RE_',num2str(Re),'_MOMENTS.mat');
+diary_string = strcat('Diary_RE_BASE_1_D_',num2str(Diff),'_RE_',num2str(Re),'_moments.txt');
+interpolation_string = strcat('INTERPOLATION_RE_BASE_1_D_',num2str(Diff),'_RE_',num2str(Re),'_MOMENTS.txt');
 
 tic
 
 % load the data
-load(load_string,'c0_x_y_z_V','CPT','CPT_slice','Flow_Normalized','CPT_V',...
-    'Flow_Outlet','tau','n_CPT');
+load(load_string,'c0_x_y_z_V','CPT','CPT_slice','CPT_V',...
+    'Flow_Outlet','tau','n_CPT','Flow_Matrix_conv','Flow_Matrix_geometric');
 
 % create a fileID for writing the diary
 fileID = fopen(diary_string,'w');
+
+Flow_Matrix_diff = Flow_Matrix_geometric*Diff;
+
+% scaling factor
+scaling = Re/Re_base;
+
+% the overall Flow_Matrix is the sum of the convective and the diffusive
+% flow matrix
+
+Flow_Matrix = Flow_Matrix_conv*scaling + Flow_Matrix_diff;
+
+% the matrix does not contain any entries on the diagoanl yet, which
+% represent the total ouflow of every compartment. Due to the mass balance
+% for every compartment and the assumption that the density is constant,
+% the overall outgoing flux for a compartment is equal to the sum of all
+% ingoing fluxes. This is represented by the sum along every row. Since the
+% flow is an outgoing flux, the sign is negative
+
+D = diag(-sum(Flow_Matrix,2));
+Flow_Matrix = Flow_Matrix + D;
+
+% alle fluxes are volumetric flow rates. Since the balance for a CSTR is
+% based on the volume, every row must be "scaled" with the corresponding
+% compartment volume (./Volume_all). The inlet and outlet are associated
+% with a volume of 1. Thus, only the last two rows in the matrix contains
+% the exact volume flow rates. Additionally, since there are no diffusive
+% fluxes from or to the inlet or outelt, the last two rows only contains
+% the convective streams
+
+Volume_all = [CPT_V(:,2);1;1];
+Flow_Normalized = Flow_Matrix./Volume_all;
 
 % since the transport equations for the moments can be treated as a
 % reaction of 0-th order for every moment, the ode is actually a system of
@@ -56,9 +91,11 @@ M3 = full(M3);
 
 % calcualte the caracterisitc key numbers
 variance = M2 - M1^2;
+sigma2_theta = variance/M1^2;
 CoV = sqrt(variance/M1^2);
 central_M3 = M3 - 3*M2*M1 + 2*M1^3;
 skewness = (central_M3/M1^3)^(1/3);
+math_skewness = central_M3/((M2-M1^2)^(3/2));
 
 % calculate the charactersitics for every slice for a comparison with the
 % raw values of the CFD
@@ -115,7 +152,8 @@ J_ZD = (M1_sqr_Vavg - M1_Vavg^2)/(M2_Vavg - M1_Vavg^2);
 
 CoV_age_L = sqrt(M2_Vavg - 2*M1_Vavg*tau + tau^2)/tau;
 CoV_mean_age_L = sqrt(M1_sqr_Vavg - 2*M1_Vavg*tau + tau^2)/tau;
-J_L = (M1_sqr_Vavg - 2*M1_Vavg*tau + tau^2) / (M2_Vavg - 2*M1_Vavg*tau + tau^2);
+% J_L = (M1_sqr_Vavg - 2*M1_Vavg*tau + tau^2) / (M2_Vavg - 2*M1_Vavg*tau + tau^2);
+J_L = (M1_sqr_Vavg - 2*M1_Vavg*M1 + M1^2) / (M2_Vavg - 2*M1_Vavg*M1 + M1^2);
 
 %%
 % writing interpolation file for FLUENT to show the moment values of the
@@ -142,8 +180,8 @@ toc;
 
 % fprintf(fileID,'Simulated time [s] [s]: %d\n',t(end));
 fprintf(fileID,'Time for calculation [s]: %d\n',time);
-
+fclose(fileID);
 save(save_string,'Flow_Avg_M1','Flow_Avg_M2','Flow_Avg_M3','Flow_Avg_M4','Flow_Avg_M5',...
-    'tau','M_end','M1','M2','M3','variance','CoV','central_M3','skewness',...
+    'tau','M_end','M1','M2','M3','variance','sigma2_theta','CoV','central_M3','skewness','math_skewness',...
     'n_SLICES','n_LOCAL','n_CPT','Slice_M1_M2_M3_M4_M5_var_CoV','CPT_slice',...
     'CoV_age_ZD','CoV_mean_age_ZD','J_ZD','CoV_age_L','CoV_mean_age_L','J_L')
